@@ -1,0 +1,199 @@
+{
+  "name": "Fluxo do RH - Aula 2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [0, 0],
+      "id": "e21af087-7c63-4208-913e-125f417abf10",
+      "name": "When chat message received",
+      "webhookId": "8489a35d-52da-42b3-bc5d-e4dcd6ed4c41"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Você é o HR Buddy, assistente virtual de RH da ChocolaTech.\nREGRAS:\n1. Sempre responda em português.\n2. Responda APENAS dúvidas relacionadas a RH.\nIDENTIFICAÇÃO DO FUNCIONÁRIO:\n- Se o usuário não disser quem é, pergunte o nome completo dele logo na primeira mensagem.\n- Use a ferramenta MySQL para buscar na tabela funcionarios usando SEMPRE o NOME COMPLETO informado pelo usuário na conversa.\n- Se encontrado: use os saldos de férias e banco de horas.\n- Se não encontrado: não invente dados pessoais. Responda apenas com base nas políticas gerais de RH do Vector Store.\nUse a base de conhecimento para dúvidas gerais"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [384, 0],
+      "id": "732525b2-5d5d-42e1-8ce0-ead7fdf26fc2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [224, 224],
+      "id": "d64cdbd8-3143-4e74-a6ec-f56ad22bcf1b",
+      "name": "Cohere Chat Model",
+      "credentials": {
+        "cohereApi": {
+          "id": "eS1Mm3AeYlWCU070",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [352, 224],
+      "id": "76de1e79-0fd2-440f-8ad1-d8975c39b846",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busque informações sobre políticas de RH, férias, horários e rotinas da empresa CHOCOLATECH",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [480, 224],
+      "id": "fe3f48c9-dbab-4098-b51c-ed9a77539fa5",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "modelName": "embed-multilingual-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "typeVersion": 1,
+      "position": [560, 432],
+      "id": "3a4e1b71-541f-4d2d-8786-2530127a4076",
+      "name": "Embeddings Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "eS1Mm3AeYlWCU070",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": {
+          "__rl": true,
+          "value": "funcionarios",
+          "mode": "list",
+          "cachedResultName": "funcionarios"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "nome",
+              "condition": "LIKE",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `Sempre use o formato %nome% (com % no inicio e no fim) para busca parcial:\nExemplo:\n%João Silva%`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [768, 224],
+      "id": "107f2f07-cb42-451d-a976-6156c9a766b5",
+      "name": "Select rows from a table in MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "vgILjg73bJGn3S4J",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Cohere": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table in MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "27166bbc-fe0e-46d2-aa41-3a5f5996d7d1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "97b38d9896a42b0fd2060596730e7402587146cb25b3adf88b93d4e53e398692"
+  },
+  "nodeGroups": [],
+  "id": "0uiCWqjWpAlekROF",
+  "tags": []
+}
